@@ -12,8 +12,11 @@
         <div class="max-w-md mx-auto flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-bold tracking-tight">Judicatura Test</h1>
-                <p id="app-subtitle" class="text-xs text-indigo-200">Configuración Inicial</p>
+                <p id="app-subtitle" class="text-xs text-indigo-200">Acceso</p>
             </div>
+            <button id="logout-btn" class="hidden text-xs bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded-lg transition font-medium">
+                Cerrar Sesión
+            </button>
             <div id="progress-container" class="text-right hidden">
                 <span id="progress-text" class="text-xs font-semibold block text-indigo-100">Pregunta 0 de 0</span>
                 <div class="w-24 bg-indigo-800 h-1.5 rounded-full mt-1 overflow-hidden">
@@ -25,7 +28,29 @@
 
     <main class="flex-1 max-w-md w-full mx-auto p-4 pb-24">
 
-        <div id="year-screen" class="space-y-4">
+        <div id="login-screen" class="space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-bold text-gray-800 mb-1 text-center">Iniciar Sesión</h2>
+                <p class="text-xs text-gray-500 mb-4 text-center">Introduce tus credenciales de acceso</p>
+                
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Usuario</label>
+                        <input type="text" id="username" required class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Contraseña</label>
+                        <input type="password" id="password" required class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-indigo-500 text-sm">
+                    </div>
+                    <p id="login-error" class="text-xs text-red-500 hidden text-center font-medium">Usuario o contraseña incorrectos.</p>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl shadow-sm transition text-sm">
+                        Entrar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="year-screen" class="hidden space-y-4">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h2 class="text-lg font-bold text-gray-800 mb-1">Selecciona las convocatorias</h2>
                 <p class="text-xs text-gray-500 mb-4">Puedes marcar varios años para combinar sus preguntas en un único pool de estudio.</p>
@@ -43,6 +68,10 @@
                         <input type="checkbox" id="chk-2023" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                         <span class="ml-3 font-semibold text-gray-700 text-sm">Examen 2023 (Convocatoria 2022)</span>
                     </label>
+                    <label class="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer active:bg-gray-100">
+                        <input type="checkbox" id="chk-2022" checked class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                        <span class="ml-3 font-semibold text-gray-700 text-sm">Examen 2022 (Convocatoria 2021)</span>
+                    </label>
                 </div>
 
                 <button id="load-data-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3.5 px-4 rounded-xl shadow-sm transition text-sm flex items-center justify-center gap-2">
@@ -55,7 +84,7 @@
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-lg font-bold text-gray-800">Selecciona el Bloque o Modo</h2>
-                    <button onclick="window.location.reload()" class="text-xs text-indigo-600 font-medium hover:underline">Cambiar años</button>
+                    <button id="change-years-btn" class="text-xs text-indigo-600 font-medium hover:underline">Cambiar años</button>
                 </div>
                 <p class="text-xs text-gray-500 mb-4">Las preguntas marcadas con ⭐ tienen prioridad porque las has fallado anteriormente en tu móvil.</p>
                 
@@ -143,8 +172,12 @@
     </main>
 
     <script>
+        // --- CONFIGURACIÓN DE AUTH ---
+        const AUTH_USER = "opositor";
+        const AUTH_PASS = "1234";
+
         let preguntasGlobales = [];
-        let preguntasBloqueRaw = []; // Almacén temporal antes de cortar
+        let preguntasBloqueRaw = []; 
         let preguntasFiltradas = [];
         let currentIndex = 0;
         let aciertos = 0;
@@ -152,7 +185,7 @@
         let respondido = false;
         let bloqueActualNombre = "";
 
-        // Estructura de bloques solicitados
+        // Estructura de bloques
         const CONFIG_BLOQUES = [
             { id: 1, nombre: "Bloque 1: Derecho Constitucional", submaterias: ["Derecho Constitucional", "Organización Judicial", "Derecho de la Unión Europea", "Derecho Internacional / DDHH", "Derecho Internacional / Sucesiones", "Derecho Constitucional / DDHH", "Derecho Constitucional / Igualdad", "Derecho Constitucional / LOREG"] },
             { id: 2, nombre: "Bloque 2: Derecho Civil", submaterias: ["Derecho Civil", "Derecho Internacional Privado", "Derecho Internacional Sucesiones", "Derecho Civil / Consumo", "Derecho Civil / LAU", "Derecho Civil / Edificación", "Derecho Civil / Responsabilidad", "Derecho Civil / Familia", "Derecho Civil / Gananciales", "Derecho Civil / Sucesiones"] },
@@ -162,12 +195,14 @@
         ];
 
         // Vistas
+        const loginScreen = document.getElementById('login-screen');
         const yearScreen = document.getElementById('year-screen');
         const menuScreen = document.getElementById('menu-screen');
         const quantityScreen = document.getElementById('quantity-screen');
         const quizScreen = document.getElementById('quiz-screen');
 
         // Componentes
+        const logoutBtn = document.getElementById('logout-btn');
         const blocksList = document.getElementById('blocks-list');
         const mixedCategoryContainer = document.getElementById('mixed-category-container');
         const quantitySlider = document.getElementById('quantity-slider');
@@ -188,12 +223,59 @@
         const scoreIncorrect = document.getElementById('score-incorrect');
         const scoreFinal = document.getElementById('score-final');
 
-        // Cargar JSONs dinámicamente
+        // --- LÓGICA DE AUTENTICACIÓN ---
+        function verificarSesion() {
+            if (sessionStorage.getItem('isLogged') === 'true') {
+                loginScreen.classList.add('hidden');
+                yearScreen.classList.remove('hidden');
+                logoutBtn.classList.remove('hidden');
+                document.getElementById('app-subtitle').innerText = "Configuración Inicial";
+            } else {
+                loginScreen.classList.remove('hidden');
+                yearScreen.classList.add('hidden');
+                menuScreen.classList.add('hidden');
+                quantityScreen.classList.add('hidden');
+                quizScreen.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+                progressContainer.classList.add('hidden');
+                document.getElementById('app-subtitle').innerText = "Acceso";
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userIn = document.getElementById('username').value;
+            const passIn = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+
+            if (userIn === AUTH_USER && passIn === AUTH_PASS) {
+                sessionStorage.setItem('isLogged', 'true');
+                errorMsg.classList.add('hidden');
+                document.getElementById('username').value = "";
+                document.getElementById('password').value = "";
+                verificarSesion();
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('isLogged');
+            // Resetear estados de la app al salir
+            preguntasGlobales = [];
+            verificarSesion();
+        });
+
+        // Inicializar comprobando auth al cargar la página
+        verificarSesion();
+
+        // --- LÓGICA DE LA APLICACIÓN ---
         document.getElementById('load-data-btn').addEventListener('click', async () => {
             const archivos = [];
             if (document.getElementById('chk-2025').checked) archivos.push('preguntas.json');
             if (document.getElementById('chk-2024').checked) archivos.push('preguntas2024.json');
             if (document.getElementById('chk-2023').checked) archivos.push('preguntas2023.json');
+            if (document.getElementById('chk-2022').checked) archivos.push('preguntas2022.json');
 
             if (archivos.length === 0) { alert("Debes seleccionar al menos un año."); return; }
 
@@ -213,7 +295,12 @@
             } else { alert("Coloca los archivos JSON correspondientes en la misma carpeta."); }
         });
 
-        // Construir menú principal de bloques
+        document.getElementById('change-years-btn').addEventListener('click', () => {
+            menuScreen.classList.add('hidden');
+            yearScreen.classList.remove('hidden');
+            document.getElementById('app-subtitle').innerText = "Configuración Inicial";
+        });
+
         function generarMenuBloques() {
             blocksList.innerHTML = ""; mixedCategoryContainer.innerHTML = "";
             const erroresHistorial = JSON.parse(localStorage.getItem('judicatura_errores')) || {};
@@ -236,7 +323,6 @@
                 blocksList.appendChild(btn);
             });
 
-            // Categoría Mixta
             const totalFalladasGlobales = preguntasGlobales.filter(p => erroresHistorial[p.id]).length;
             const btnMixto = document.createElement('button');
             btnMixto.className = "w-full text-left p-4 rounded-xl border-2 border-dashed border-indigo-300 bg-indigo-50/40 hover:bg-indigo-50 active:bg-indigo-100 transition flex justify-between items-center shadow-sm mt-2";
@@ -247,11 +333,9 @@
             mixedCategoryContainer.appendChild(btnMixto);
         }
 
-        // Abrir la pantalla intermedia del Slider y botones de cantidad
         function abrirConfiguracionCantidad(nombreMateria, poolPreguntas, erroresHistorial) {
             bloqueActualNombre = nombreMateria;
             
-            // Guardamos el pool ordenado con el algoritmo de errores en la variable temporal
             preguntasBloqueRaw = [...poolPreguntas];
             preguntasBloqueRaw.sort((a, b) => {
                 const pesoA = erroresHistorial[a.id] ? Math.random() * 4 : Math.random() * 1;
@@ -259,16 +343,13 @@
                 return pesoB - pesoA;
             });
 
-            // Ajustar el slider dinámicamente según las preguntas reales del pool
             const maxPreguntas = preguntasBloqueRaw.length;
             quantitySlider.max = maxPreguntas;
             quantitySlider.min = 1;
-            // Valor por defecto razonable (10, o el máximo si hay menos de 10)
             const defaultVal = Math.min(10, maxPreguntas);
             quantitySlider.value = defaultVal;
             sliderValLabel.innerText = defaultVal;
 
-            // Mostrar u ocultar/deshabilitar botones rápidos según la disponibilidad real
             const botonesRapidos = [5, 10, 15, 20, 50, 100];
             botonesRapidos.forEach(num => {
                 const btn = document.getElementById(`btn-qty-${num}`);
@@ -279,22 +360,18 @@
                 }
             });
 
-            // Textos informativos
             quantityTitle.innerText = nombreMateria.includes("Mixto") ? "Configurar Modo Mixto" : nombreMateria;
             quantityAvailableTxt.innerText = `Hay ${maxPreguntas} preguntas disponibles para este criterio en tu app.`;
 
-            // Transición de vistas
             menuScreen.classList.add('hidden');
             quantityScreen.classList.remove('hidden');
             document.getElementById('app-subtitle').innerText = "Extensión del Test";
         }
 
-        // Sincronizar movimiento del slider
         quantitySlider.addEventListener('input', (e) => {
             sliderValLabel.innerText = e.target.value;
         });
 
-        // Configuración mediante botones fijos
         function setFixedQty(num) {
             if (num <= parseInt(quantitySlider.max)) {
                 quantitySlider.value = num;
@@ -302,14 +379,12 @@
             }
         }
 
-        // Botón Atrás de la pantalla de cantidad
         document.getElementById('back-to-blocks-btn').addEventListener('click', () => {
             quantityScreen.classList.add('hidden');
             menuScreen.classList.remove('hidden');
             document.getElementById('app-subtitle').innerText = "Selección de Bloque";
         });
 
-        // Comenzar el test (Corta el pool según el slider definitivo)
         document.getElementById('start-test-btn').addEventListener('click', () => {
             const numElegido = parseInt(quantitySlider.value);
             preguntasFiltradas = preguntasBloqueRaw.slice(0, numElegido);
@@ -324,7 +399,6 @@
             mostrarPregunta();
         });
 
-        // Mostrar pregunta en el test
         function mostrarPregunta() {
             respondido = false; nextBtn.classList.add('hidden'); optionsContainer.innerHTML = '';
             const q = preguntasFiltradas[currentIndex];
@@ -346,7 +420,6 @@
             });
         }
 
-        // Validar respuestas
         function verificarAccion(selectedIndex, selectedBtn) {
             if (respondido) return; respondido = true;
             const q = preguntasFiltradas[currentIndex];
@@ -372,7 +445,6 @@
             const notaReal = Math.max(0, aciertos - (fallos * 0.33)); scoreFinal.innerText = notaReal.toFixed(2);
         }
 
-        // Abandonar test a mitad de camino
         document.getElementById('back-to-menu-btn').addEventListener('click', () => {
             if(confirm("¿Seguro que deseas abandonar el test? Perderás el progreso de este bloque.")) {
                 quizScreen.classList.add('hidden'); progressContainer.classList.add('hidden');
@@ -382,7 +454,6 @@
             }
         });
 
-        // Siguiente pregunta
         nextBtn.addEventListener('click', () => {
             currentIndex++;
             if (currentIndex < preguntasFiltradas.length) { mostrarPregunta(); } 
